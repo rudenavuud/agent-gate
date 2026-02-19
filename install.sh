@@ -31,9 +31,15 @@ set -euo pipefail
 
 INSTALL_DIR="/opt/agent-gate"
 CONFIG_DIR="/etc/agent-gate"
-RUN_DIR="/run/agent-gate"
 SERVICE_USER="agent-gate"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# macOS uses /var/run, Linux uses /run
+if [[ "$(uname -s)" == "Darwin" ]]; then
+  RUN_DIR="/var/run/agent-gate"
+else
+  RUN_DIR="/run/agent-gate"
+fi
 
 # ─── Colors ───────────────────────────────────────────────────────────
 

@@ -15,14 +15,17 @@
 const fs = require('fs');
 const path = require('path');
 
+// macOS uses /var/run, Linux uses /run
+const RUN_BASE = process.platform === 'darwin' ? '/var/run/agent-gate' : '/run/agent-gate';
+
 const DEFAULTS = {
-  socketPath: '/run/agent-gate/agent-gate.sock',
+  socketPath: `${RUN_BASE}/agent-gate.sock`,
   httpPort: 18891,
-  pidFile: '/run/agent-gate/agent-gate.pid',
+  pidFile: `${RUN_BASE}/agent-gate.pid`,
   cacheTTL: 0,
   approvalTimeoutMs: 300000, // 5 minutes
-  pendingDir: '/run/agent-gate/pending',
-  auditLogPath: '/run/agent-gate/audit.log',
+  pendingDir: `${RUN_BASE}/pending`,
+  auditLogPath: `${RUN_BASE}/audit.log`,
   openVaults: [],
   gatedVaults: [],
   standingApprovals: [],
