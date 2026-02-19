@@ -19,7 +19,8 @@ const path = require('path');
 
 // ─── Config ──────────────────────────────────────────────────────────
 
-const DEFAULT_SOCKET = '/run/agent-gate/agent-gate.sock';
+const RUN_BASE = process.platform === 'darwin' ? '/var/run/agent-gate' : '/run/agent-gate';
+const DEFAULT_SOCKET = `${RUN_BASE}/agent-gate.sock`;
 const SOCKET_PATH = process.env.AGENT_GATE_SOCKET || DEFAULT_SOCKET;
 const TIMEOUT_MS = 310000; // 5min approval + 10s buffer
 
