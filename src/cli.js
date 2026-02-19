@@ -21,6 +21,7 @@ const path = require('path');
 
 const RUN_BASE = process.platform === 'darwin' ? '/var/run/agent-gate' : '/run/agent-gate';
 const DEFAULT_SOCKET = `${RUN_BASE}/agent-gate.sock`;
+const DEFAULT_HTTP_PORT = 18891;
 const SOCKET_PATH = process.env.AGENT_GATE_SOCKET || DEFAULT_SOCKET;
 const TIMEOUT_MS = 310000; // 5min approval + 10s buffer
 
@@ -66,6 +67,48 @@ async function send(request) {
     }
     die(`Connection failed: ${e.message}`);
   }
+}
+
+function getConfigPathCandidates() {
+  return [
+    process.env.AGENT_GATE_CONFIG,
+    '/etc/agent-gate/config.json',
+    path.join(process.cwd(), 'config.json')
+  ].filter(Boolean);
+}
+
+function getConfiguredHttpPort() {
+  for (const p of getConfigPathCandidates()) {
+    try {
+      const raw = fs.readFileSync(p, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Number.isInteger(parsed.httpPort) && parsed.httpPort > 0) {
+        return parsed.httpPort;
+      }
+    } catch {
+      // Ignore unreadable/invalid candidates and keep searching.
+    }
+  }
+  return null;
+}
+
+function getCallbackPorts() {
+  const ports = [];
+
+  const envPort = Number(process.env.AGENT_GATE_HTTP_PORT);
+  if (Number.isInteger(envPort) && envPort > 0) {
+    ports.push(envPort);
+  }
+
+  const cfgPort = getConfiguredHttpPort();
+  if (cfgPort) {
+    ports.push(cfgPort);
+  }
+
+  // Keep default and historical fallback for compatibility.
+  ports.push(DEFAULT_HTTP_PORT, 18892);
+
+  return [...new Set(ports)];
 }
 
 // ─── Commands ────────────────────────────────────────────────────────
@@ -134,17 +177,14 @@ async function cmdPing() {
   }
 }
 
-async function cmdApprove(args, approved) {
-  const requestId = args[0];
-  if (!requestId) die(`Usage: agent-gate ${approved ? 'approve' : 'deny'} <request-id>`);
-
+async function postCallback({ requestId, approved, port }) {
   const http = require('http');
   const data = JSON.stringify({ requestId, approved });
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const req = http.request({
       hostname: '127.0.0.1',
-      port: 18891,
+      port,
       path: '/callback',
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }
@@ -154,24 +194,46 @@ async function cmdApprove(args, approved) {
       res.on('end', () => {
         try {
           const result = JSON.parse(buf);
-          if (result.ok) {
-            console.log(result.resolved
-              ? `Request ${requestId} ${approved ? 'approved' : 'denied'}`
-              : `No pending request with ID ${requestId}`
-            );
-          } else {
-            die(result.error || 'Unknown error');
-          }
+          resolve(result);
         } catch {
-          die(`Invalid response: ${buf}`);
+          reject(new Error(`Invalid response from port ${port}: ${buf}`));
         }
-        resolve();
       });
     });
-    req.on('error', (e) => die(`Could not reach daemon: ${e.message}`));
+    req.on('error', (e) => reject(new Error(`port ${port}: ${e.message}`)));
     req.write(data);
     req.end();
   });
+}
+
+async function cmdApprove(args, approved) {
+  let requestId = args[0];
+  if (!requestId) die(`Usage: agent-gate ${approved ? 'approve' : 'deny'} <request-id>`);
+
+  // Allow passing callback_data directly: ag:approve:<id> / ag:deny:<id>
+  const m = String(requestId).match(/^ag:(approve|deny):(.+)$/);
+  if (m) requestId = m[2];
+
+  const ports = getCallbackPorts();
+  const errors = [];
+
+  for (const port of ports) {
+    try {
+      const result = await postCallback({ requestId, approved, port });
+      if (!result.ok) {
+        die(result.error || `Unknown error from daemon on port ${port}`);
+      }
+      console.log(result.resolved
+        ? `Request ${requestId} ${approved ? 'approved' : 'denied'}`
+        : `No pending request with ID ${requestId}`
+      );
+      return;
+    } catch (e) {
+      errors.push(e.message);
+    }
+  }
+
+  die(`Could not reach daemon callback endpoint. Tried ports ${ports.join(', ')} (${errors.join(' | ')})`);
 }
 
 function formatUptime(seconds) {
@@ -204,7 +266,9 @@ Options:
   --reason, -r    Reason for accessing the secret (REQUIRED for gated vaults)
 
 Environment:
-  AGENT_GATE_SOCKET  Path to daemon socket (default: ${DEFAULT_SOCKET})
+  AGENT_GATE_SOCKET     Path to daemon socket (default: ${DEFAULT_SOCKET})
+  AGENT_GATE_HTTP_PORT  Override callback port for approve/deny
+  AGENT_GATE_CONFIG     Optional config path (used to auto-detect httpPort)
 
 Examples:
   agent-gate read "op://Vault/API-Key/credential"
