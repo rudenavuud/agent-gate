@@ -229,6 +229,11 @@ async function handleRead(request) {
       console.log(`[agent-gate] Standing approval: ${parsed.item} (${standing.note})`);
       try {
         const value = await provider.read(uri, { useServiceAccount: true });
+        audit.log({
+          action: 'read', uri, vault: parsed.vault,
+          item: parsed.item, field: parsed.field,
+          type: 'gated', result: 'standing_approved_read'
+        });
         return { value };
       } catch (e) {
         audit.log({ action: 'read_error', uri, error: e.message });
@@ -308,6 +313,12 @@ async function handleRead(request) {
       try {
         const value = await provider.read(uri, { useServiceAccount: true });
         setCache(uri, value);
+        audit.log({
+          action: 'read', requestId, uri,
+          vault: parsed.vault, item: parsed.item,
+          field: parsed.field, reason,
+          type: 'gated', result: 'approved_read'
+        });
         return { value };
       } catch (e) {
         audit.log({ action: 'read_error', requestId, uri, error: e.message });
