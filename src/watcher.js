@@ -67,16 +67,22 @@ function scanFile(filePath) {
   // No new data
   if (stat.size === lastPos) return;
 
-  // Read only the new portion
+  // Read all new data in chunks so we don't lag behind on large files
   const fd = fs.openSync(filePath, 'r');
-  const bufSize = Math.min(stat.size - lastPos, 64 * 1024); // Read at most 64KB at a time
-  const buf = Buffer.alloc(bufSize);
-  fs.readSync(fd, buf, 0, bufSize, lastPos);
+  let pos = lastPos;
+  const chunks = [];
+  while (pos < stat.size) {
+    const bufSize = Math.min(stat.size - pos, 256 * 1024);
+    const buf = Buffer.alloc(bufSize);
+    fs.readSync(fd, buf, 0, bufSize, pos);
+    chunks.push(buf.toString('utf8'));
+    pos += bufSize;
+  }
   fs.closeSync(fd);
 
-  filePositions.set(filePath, lastPos + bufSize);
+  filePositions.set(filePath, stat.size);
 
-  const chunk = buf.toString('utf8');
+  const chunk = chunks.join('');
   let match;
 
   while ((match = CALLBACK_RE.exec(chunk)) !== null) {
@@ -188,6 +194,16 @@ process.on('SIGTERM', () => {
 
 // ─── Start ───────────────────────────────────────────────────────────
 
-// Initial scan
-poll();
+function initializeFromTail() {
+  const files = getRecentSessionFiles(10);
+  for (const file of files) {
+    try {
+      const stat = fs.statSync(file);
+      filePositions.set(file, stat.size); // start at EOF to avoid replaying old callbacks
+    } catch {}
+  }
+  console.log(`[agent-gate-watcher] Initialized ${files.length} files at EOF`);
+}
+
+initializeFromTail();
 startWatching();
