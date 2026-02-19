@@ -79,6 +79,13 @@ case "$OS" in
   *)      error "Unsupported OS: $OS"; exit 1 ;;
 esac
 
+# Set group name (macOS uses 'staff', Linux uses service user name)
+if [[ "$OS" == "Darwin" ]]; then
+  SERVICE_GROUP="staff"
+else
+  SERVICE_GROUP="$SERVICE_USER"
+fi
+
 # ─── Create system user ──────────────────────────────────────────────
 
 if id "$SERVICE_USER" &>/dev/null; then
@@ -129,7 +136,7 @@ else
   rm -rf "$TMPDIR"
 fi
 
-chown -R "$SERVICE_USER:$SERVICE_USER" "$INSTALL_DIR"
+chown -R "$SERVICE_USER:$SERVICE_GROUP" "$INSTALL_DIR"
 ok "Source installed to $INSTALL_DIR"
 
 # ─── Install config ──────────────────────────────────────────────────
@@ -146,13 +153,13 @@ else
   info "Config already exists at $CONFIG_DIR/config.json (not overwritten)"
 fi
 
-chown -R "$SERVICE_USER:$SERVICE_USER" "$CONFIG_DIR"
+chown -R "$SERVICE_USER:$SERVICE_GROUP" "$CONFIG_DIR"
 chmod 600 "$CONFIG_DIR/config.json" 2>/dev/null || true
 
 # ─── Create runtime directory ────────────────────────────────────────
 
 mkdir -p "$RUN_DIR/pending"
-chown -R "$SERVICE_USER:$SERVICE_USER" "$RUN_DIR"
+chown -R "$SERVICE_USER:$SERVICE_GROUP" "$RUN_DIR"
 chmod 755 "$RUN_DIR"
 chmod 777 "$RUN_DIR/pending"  # Agent user needs write access
 ok "Runtime directory: $RUN_DIR"
@@ -169,17 +176,17 @@ if [[ "$OS" == "Linux" ]]; then
   # systemd
   if command -v systemctl &>/dev/null; then
     cp "$SCRIPT_DIR/systemd/agent-gate.service" /etc/systemd/system/ 2>/dev/null || \
-    cat > /etc/systemd/system/agent-gate.service <<'UNIT'
+    cat > /etc/systemd/system/agent-gate.service <<UNIT
 [Unit]
 Description=agent-gate — Human-in-the-loop secret approval for AI agents
 After=network.target
 
 [Service]
 Type=simple
-User=agent-gate
-Group=agent-gate
+User=$SERVICE_USER
+Group=$SERVICE_GROUP
 ExecStartPre=/bin/mkdir -p /run/agent-gate
-ExecStartPre=/bin/chown agent-gate:agent-gate /run/agent-gate
+ExecStartPre=/bin/chown $SERVICE_USER:$SERVICE_GROUP /run/agent-gate
 ExecStart=/usr/bin/node /opt/agent-gate/src/daemon.js
 Environment=AGENT_GATE_CONFIG=/etc/agent-gate/config.json
 Environment=NODE_ENV=production
@@ -214,7 +221,7 @@ elif [[ "$OS" == "Darwin" ]]; then
   <string>com.agent-gate.daemon</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/node</string>
+    <string>$(which node)</string>
     <string>/opt/agent-gate/src/daemon.js</string>
   </array>
   <key>EnvironmentVariables</key>
