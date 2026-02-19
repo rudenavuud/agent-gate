@@ -8,7 +8,7 @@
   "auditLogPath": "/run/agent-gate/audit.log",
 
   "approvalTimeoutMs": 300000,
-  "cacheTTL": 0,
+  "cacheTTL": 900000,
 
   "_vaultPolicy": "Use two vaults: open (low-risk) + gated (high-risk)",
   "openVaults": ["Agent-Open"],

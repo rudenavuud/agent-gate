@@ -22,7 +22,7 @@ const DEFAULTS = {
   socketPath: `${RUN_BASE}/agent-gate.sock`,
   httpPort: 18891,
   pidFile: `${RUN_BASE}/agent-gate.pid`,
-  cacheTTL: 0,
+  cacheTTL: 900000,
   approvalTimeoutMs: 300000, // 5 minutes
   pendingDir: `${RUN_BASE}/pending`,
   auditLogPath: `${RUN_BASE}/audit.log`,

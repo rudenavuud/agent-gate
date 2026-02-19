@@ -79,6 +79,8 @@ Set your approval channel (e.g., Telegram bot token + chat ID) and define your *
 
 If you currently keep everything in one vault, split it now before production use: move high-risk secrets into your gated vault.
 
+Tip: keep a non-zero `cacheTTL` (e.g. 5–15 minutes) to prevent approval spam when a task reads the same secret multiple times in one run.
+
 ### Start
 
 ```bash
@@ -146,7 +148,7 @@ agent-gate read "op://Production-Secrets/Stripe/secret-key" --reason "Checking w
 | `socketPath` | `/run/agent-gate/agent-gate.sock` | Unix socket path |
 | `httpPort` | `18891` | HTTP callback server port (localhost only) |
 | `approvalTimeoutMs` | `300000` (5 min) | How long to wait for approval |
-| `cacheTTL` | `0` (disabled) | Cache approved secrets (ms) |
+| `cacheTTL` | `900000` (15 min) | Cache approved secrets (ms). Set `0` to disable. |
 | `openVaults` | `[]` | Vaults that don't require approval |
 | `gatedVaults` | `[]` | Vaults that require human approval |
 | `providers.default` | `"onepassword"` | Secret provider to use |
