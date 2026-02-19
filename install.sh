@@ -236,6 +236,8 @@ elif [[ "$OS" == "Darwin" ]]; then
     <string>/etc/agent-gate/config.json</string>
     <key>NODE_ENV</key>
     <string>production</string>
+    <key>PATH</key>
+    <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
   </dict>
   <key>UserName</key>
   <string>agent-gate</string>
@@ -250,6 +252,16 @@ elif [[ "$OS" == "Darwin" ]]; then
 </dict>
 </plist>
 PLIST
+
+  # Create log file with correct ownership
+  touch /var/log/agent-gate.log
+  chown agent-gate:staff /var/log/agent-gate.log
+
+  # Ensure node is accessible system-wide (Homebrew installs to /opt/homebrew/bin)
+  if [[ ! -e /usr/local/bin/node ]] && [[ -e /opt/homebrew/bin/node ]]; then
+    ln -sf /opt/homebrew/bin/node /usr/local/bin/node
+    ok "Symlinked node to /usr/local/bin/node"
+  fi
 
   ok "launchd plist installed: $PLIST"
   info "  Start with: sudo launchctl load $PLIST"
