@@ -108,7 +108,10 @@ else
     dscl . -create /Users/"$SERVICE_USER" UserShell /usr/bin/false
     dscl . -create /Users/"$SERVICE_USER" UniqueID "$NEXT_ID"
     dscl . -create /Users/"$SERVICE_USER" PrimaryGroupID 20
+    dscl . -create /Users/"$SERVICE_USER" NFSHomeDirectory /Users/"$SERVICE_USER"
     dscl . -create /Users/"$SERVICE_USER" IsHidden 1
+    mkdir -p /Users/"$SERVICE_USER"/.config/op
+    chown -R "$SERVICE_USER":staff /Users/"$SERVICE_USER"
   fi
   ok "Created user '$SERVICE_USER'"
 fi
@@ -238,6 +241,8 @@ elif [[ "$OS" == "Darwin" ]]; then
     <string>production</string>
     <key>PATH</key>
     <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+    <key>HOME</key>
+    <string>/Users/$SERVICE_USER</string>
   </dict>
   <key>UserName</key>
   <string>agent-gate</string>
