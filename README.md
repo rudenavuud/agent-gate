@@ -6,6 +6,15 @@ Your AI coding agent can run any shell command on your machine. That means it ca
 
 agent-gate fixes this. Sensitive secrets require your explicit approval on your phone before the agent can access them. Every request is audit-logged.
 
+## Recommended Vault Layout (Start Here)
+
+Use **two vaults** from day one:
+
+1. **Open vault** (low-risk): search APIs, analytics keys, non-critical tooling
+2. **Gated vault** (high-risk): payment keys, production tokens, OAuth refresh tokens, PATs, SSH credentials
+
+This gives you speed for routine work and human approval for anything dangerous.
+
 ```
 ┌─────────┐    ┌──────────────┐    ┌────────────┐    ┌──────────┐
 │ AI Agent │───▸│  agent-gate  │───▸│  Telegram   │───▸│  Your    │
@@ -47,12 +56,12 @@ sudo cp config.example.json /etc/agent-gate/config.json
 sudo nano /etc/agent-gate/config.json
 ```
 
-Set your approval channel (e.g., Telegram bot token + chat ID) and define which vaults are open vs gated:
+Set your approval channel (e.g., Telegram bot token + chat ID) and define your **two-vault policy** (open + gated):
 
 ```json
 {
-  "openVaults": ["Low-Sensitivity"],
-  "gatedVaults": ["Production-Secrets"],
+  "openVaults": ["Agent-Open"],
+  "gatedVaults": ["Agent-Gated"],
   "channels": {
     "telegram": {
       "botToken": "YOUR_BOT_TOKEN",
@@ -67,6 +76,8 @@ Set your approval channel (e.g., Telegram bot token + chat ID) and define which 
   }
 }
 ```
+
+If you currently keep everything in one vault, split it now before production use: move high-risk secrets into your gated vault.
 
 ### Start
 

@@ -10,8 +10,9 @@
   "approvalTimeoutMs": 300000,
   "cacheTTL": 0,
 
-  "openVaults": ["MyVault"],
-  "gatedVaults": ["MyVault-Gated"],
+  "_vaultPolicy": "Use two vaults: open (low-risk) + gated (high-risk)",
+  "openVaults": ["Agent-Open"],
+  "gatedVaults": ["Agent-Gated"],
 
   "providers": {
     "default": "onepassword",
