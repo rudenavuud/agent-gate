@@ -1,0 +1,38 @@
+{
+  "_comment": "agent-gate configuration — copy to /etc/agent-gate/config.json",
+
+  "socketPath": "/run/agent-gate/agent-gate.sock",
+  "httpPort": 18891,
+  "pidFile": "/run/agent-gate/agent-gate.pid",
+  "pendingDir": "/run/agent-gate/pending",
+  "auditLogPath": "/run/agent-gate/audit.log",
+
+  "approvalTimeoutMs": 300000,
+  "cacheTTL": 0,
+
+  "openVaults": ["MyVault"],
+  "gatedVaults": ["MyVault-Gated"],
+
+  "providers": {
+    "default": "onepassword",
+    "onepassword": {
+      "serviceAccountTokenPath": "/home/agent-gate/service-token"
+    }
+  },
+
+  "channels": {
+    "telegram": {
+      "botToken": "YOUR_BOT_TOKEN_HERE",
+      "chatId": 0,
+      "timeZone": "UTC"
+    }
+  },
+
+  "standingApprovals": [
+    {
+      "item": "Example-Item",
+      "reasonMatch": "cron:*",
+      "note": "Scheduled job — auto-approved"
+    }
+  ]
+}

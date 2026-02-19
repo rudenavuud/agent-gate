@@ -1,0 +1,27 @@
+# agent-gate watcher — user-level service
+# Monitors AI agent session files for approval callbacks.
+#
+# Install: cp agent-gate-watcher.service ~/.config/systemd/user/
+#          systemctl --user daemon-reload
+#          systemctl --user enable --now agent-gate-watcher
+#
+# Runs as the AI agent's user (NOT as agent-gate).
+
+[Unit]
+Description=agent-gate watcher — Routes approval callbacks to daemon
+After=default.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/agent-gate/src/watcher.js
+
+Environment=AGENT_GATE_PENDING_DIR=/run/agent-gate/pending
+Environment=NODE_ENV=production
+# Override session dir if needed:
+# Environment=AGENT_GATE_SESSION_DIR=%h/.openclaw/agents/main/sessions
+
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

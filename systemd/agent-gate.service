@@ -1,0 +1,38 @@
+# agent-gate daemon — system-level service
+# Install: sudo cp agent-gate.service /etc/systemd/system/
+#          sudo systemctl daemon-reload
+#          sudo systemctl enable --now agent-gate
+#
+# The daemon runs as a dedicated user for secret isolation.
+# The AI agent user communicates via Unix socket only.
+
+[Unit]
+Description=agent-gate — Human-in-the-loop secret approval for AI agents
+After=network.target
+
+[Service]
+Type=simple
+User=agent-gate
+Group=agent-gate
+
+ExecStartPre=/bin/mkdir -p /run/agent-gate
+ExecStartPre=/bin/chown agent-gate:agent-gate /run/agent-gate
+ExecStart=/usr/bin/node /opt/agent-gate/src/daemon.js
+
+Environment=AGENT_GATE_CONFIG=/etc/agent-gate/config.json
+Environment=NODE_ENV=production
+
+Restart=on-failure
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/run/agent-gate
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,47 @@
+{
+  "name": "agent-gate",
+  "version": "1.0.0",
+  "description": "Human-in-the-loop secret approval for AI agents",
+  "main": "src/daemon.js",
+  "bin": {
+    "agent-gate": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/daemon.js",
+    "watcher": "node src/watcher.js"
+  },
+  "keywords": [
+    "security",
+    "secrets",
+    "ai-agents",
+    "1password",
+    "approval",
+    "human-in-the-loop",
+    "prompt-injection",
+    "secret-management"
+  ],
+  "author": "rudenavuud",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/rudenavuud/agent-gate.git"
+  },
+  "homepage": "https://github.com/rudenavuud/agent-gate",
+  "bugs": {
+    "url": "https://github.com/rudenavuud/agent-gate/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "src/",
+    "config.example.json",
+    "install.sh",
+    "uninstall.sh",
+    "systemd/",
+    "docs/",
+    "LICENSE",
+    "README.md"
+  ],
+  "dependencies": {}
+}
